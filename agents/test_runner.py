@@ -1,8 +1,9 @@
 import subprocess
+import sys
 
 def run_tests() -> dict:
     result = subprocess.run(
-        ["python", "-m", "pytest", "tests/test_output.py", "-v"],
+        [sys.executable, "-m", "pytest", "tests/test_output.py", "-v"],
         capture_output=True,
         text=True
     )
@@ -14,3 +15,4 @@ def run_tests() -> dict:
         "output": result.stdout,
         "errors": result.stderr
     }
+    
