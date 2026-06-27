@@ -5,3 +5,5 @@ PyGithub
 pytest 
 flask 
 streamlit 
+langgraph 
+langchain-core 
