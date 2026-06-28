@@ -8,6 +8,7 @@ def init_db():
     os.makedirs("db", exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    cursor.execute("DROP TABLE IF EXISTS runs")
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
