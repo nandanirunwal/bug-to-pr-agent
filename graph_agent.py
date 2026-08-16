@@ -5,6 +5,7 @@ from agents.code_fixer import fix_code
 from agents.test_writer import write_tests
 from agents.test_runner import run_tests
 from agents.pr_agent import create_pr
+from agents.git_agent import init_repo, setup_remote_with_token, create_branch, commit_changes, push_branch
 import os
 
 # State define karo
@@ -55,27 +56,34 @@ def test_runner_node(state: BugToPRState) -> dict:
 # Node 5 - PR Node
 def pr_node(state: BugToPRState) -> dict:
     print("🚀 Creating PR...")
-    
-    # Fixed code save karo temp_repo mein
-    with open("temp_repo/fixed_code.py", "w") as f:
-        f.write(state["fixed_code"])
-    
-    # Git commit aur push
-    os.chdir("temp_repo")
-    os.system("git add fixed_code.py")
-    os.system('git commit -m "fix: automated bug fix by Bug-to-PR Agent"')
-    os.system(f"git push https://{os.getenv('GITHUB_TOKEN')}@github.com/nandanirunwal/bug-to-pr-test.git bug-fix-branch")
-    os.chdir("..")
-    
-    # PR create karo
-    pr_url = create_pr(
-        branch_name="bug-fix-branch",
-        title="fix: automated bug fix by Bug-to-PR Agent",
-        body=f"Auto-generated PR\n\nBug: {state['bug_report'].get('bug_description')}\n\nTests: All passed ✅"
-    )
-    
-    print(f"PR: {pr_url}")
-    return {"pr_url": pr_url or "PR already exists!"}
+
+    try:
+        os.makedirs("temp_repo", exist_ok=True)
+
+        # Fixed code save karo temp_repo mein
+        with open("temp_repo/fixed_code.py", "w") as f:
+            f.write(state["fixed_code"])
+
+        # Git setup — apna git_agent.py wala proper logic use karo
+        repo = init_repo("temp_repo")
+        setup_remote_with_token(repo, repo_name="nandanirunwal/bug-to-pr-agent")
+        create_branch(repo, "bug-fix-branch")
+        commit_changes(repo, ["fixed_code.py"], "fix: automated bug fix by Bug-to-PR Agent")
+        push_branch(repo, "bug-fix-branch")
+
+        # PR create karo
+        pr_url = create_pr(
+            branch_name="bug-fix-branch",
+            title="fix: automated bug fix by Bug-to-PR Agent",
+            body=f"Auto-generated PR\n\nBug: {state['bug_report'].get('bug_description')}\n\nTests: All passed ✅"
+        )
+
+        print(f"PR: {pr_url}")
+        return {"pr_url": pr_url or "PR creation failed - check logs"}
+
+    except Exception as e:
+        print(f"PR NODE ERROR: {e}")
+        return {"pr_url": f"Error: {e}"}
 
 # Conditional Edge
 def should_retry(state: BugToPRState) -> str:

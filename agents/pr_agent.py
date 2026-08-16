@@ -6,11 +6,15 @@ load_dotenv()
 
 def create_pr(branch_name: str, title: str, body: str) -> str:
     token = os.getenv("GITHUB_TOKEN")
-    repo_name = "nandanirunwal/bug-to-pr-test"
-    
+    repo_name = "nandanirunwal/bug-to-pr-agent"
+
+    if not token:
+        print("PR Error: GITHUB_TOKEN not found in environment!")
+        return None
+
     g = Github(token)
     repo = g.get_repo(repo_name)
-    
+
     try:
         pr = repo.create_pull(
             title=title,
