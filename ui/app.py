@@ -7,7 +7,9 @@ from agents.bug_analyzer import analyze_bug
 from agents.code_fixer import fix_code
 from agents.test_writer import write_tests
 from agents.test_runner import run_tests
-from db.database import get_all_runs, init_db
+from agents.pr_agent import create_pr
+from agents.git_agent import init_repo, setup_remote_with_token, create_branch, commit_changes, push_branch
+from db.database import get_all_runs, init_db, save_run
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -54,6 +56,28 @@ if st.button("🔧 Fix My Bug!", type="primary"):
 
                     if result["passed"]:
                         st.write("✅ Tests passed!")
+
+                        st.write("🚀 Creating PR...")
+                        pr_url = None
+                        try:
+                            os.makedirs("temp_repo", exist_ok=True)
+                            with open("temp_repo/fixed_code.py", "w") as f:
+                                f.write(fixed_code)
+
+                            repo = init_repo("temp_repo")
+                            setup_remote_with_token(repo, repo_name="nandanirunwal/bug-to-pr-agent")
+                            create_branch(repo, "bug-fix-branch")
+                            commit_changes(repo, ["fixed_code.py"], "fix: automated bug fix by Bug-to-PR Agent")
+                            push_branch(repo, "bug-fix-branch")
+
+                            pr_url = create_pr(
+                                branch_name="bug-fix-branch",
+                                title="fix: automated bug fix by Bug-to-PR Agent",
+                                body=f"Auto-generated PR\n\nBug: {bug_report.get('bug_description')}\n\nTests: All passed ✅"
+                            )
+                        except Exception as e:
+                            st.error(f"PR creation failed: {e}")
+
                         status.update(label="Pipeline complete!", state="complete")
 
                         st.success("✅ Bug fixed successfully!")
@@ -64,10 +88,12 @@ if st.button("🔧 Fix My Bug!", type="primary"):
                         st.markdown("### ✅ Fixed Code:")
                         st.code(fixed_code, language="python")
 
-                        st.info("💡 PR creation works in local environment only.")
+                        if pr_url:
+                            st.success(f"🎉 Pull Request created: {pr_url}")
+                        else:
+                            st.warning("⚠️ PR could not be created. Check logs.")
 
-                        from db.database import save_run
-                        save_run("temp_input.py", bug_report.get('bug_description'), True, "", "success")
+                        save_run("temp_input.py", bug_report.get('bug_description'), True, pr_url or "", "success")
                     else:
                         status.update(label="Pipeline failed!", state="error")
                         st.error("❌ Tests failed!")
