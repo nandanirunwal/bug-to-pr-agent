@@ -1,6 +1,7 @@
 import streamlit as st
 import sys
 import os
+import shutil
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents.bug_analyzer import analyze_bug
@@ -60,7 +61,11 @@ if st.button("🔧 Fix My Bug!", type="primary"):
                         st.write("🚀 Creating PR...")
                         pr_url = None
                         try:
-                            os.makedirs("temp_repo", exist_ok=True)
+                            if os.path.exists("temp_repo"):
+                                shutil.rmtree("temp_repo")
+
+                            os.system("git clone https://github.com/nandanirunwal/bug-to-pr-agent.git temp_repo")
+
                             with open("temp_repo/fixed_code.py", "w") as f:
                                 f.write(fixed_code)
 
