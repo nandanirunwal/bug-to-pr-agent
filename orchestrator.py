@@ -5,6 +5,7 @@ from agents.code_fixer import fix_code
 from agents.test_writer import write_tests
 from agents.test_runner import run_tests
 from agents.pr_agent import create_pr
+from agents.git_agent import init_repo, setup_remote_with_token, create_branch, commit_changes, push_branch
 from db.database import init_db, save_run
 from dotenv import load_dotenv
 
@@ -130,18 +131,20 @@ def run_pipeline(file_path: str):
 
     # Step 8 - Git + PR
     print("\n🚀 Step 5: Creating PR...")
+    pr_url = None
     try:
-        os.chdir("temp_repo")
-        os.system("git add fixed_code.py")
-        os.system('git commit -m "fix: automated bug fix by Bug-to-PR Agent"')
-        os.system(f"git push https://{os.getenv('GITHUB_TOKEN')}@github.com/nandanirunwal/bug-to-pr-test.git bug-fix-branch")
-        os.chdir("..")
+        repo = init_repo("temp_repo")
+        setup_remote_with_token(repo, repo_name="nandanirunwal/bug-to-pr-agent")
+        create_branch(repo, "bug-fix-branch")
+        commit_changes(repo, ["fixed_code.py"], "fix: automated bug fix by Bug-to-PR Agent")
+        push_branch(repo, "bug-fix-branch")
 
         pr_url = create_pr(
             branch_name="bug-fix-branch",
             title="fix: automated bug fix by Bug-to-PR Agent",
             body=f"Auto-generated PR\n\nBug: {bug_report.get('bug_description')}\n\nTests: All passed ✅"
         )
+        print(f"PR created: {pr_url}")
     except Exception as e:
         print(f"❌ PR error: {e}")
         pr_url = None
