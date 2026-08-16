@@ -25,5 +25,4 @@ def create_pr(branch_name: str, title: str, body: str) -> str:
         print(f"PR created: {pr.html_url}")
         return pr.html_url
     except Exception as e:
-        print(f"PR Error: {e}")
-        return None
+     raise Exception(f"PR Error: {e}")
