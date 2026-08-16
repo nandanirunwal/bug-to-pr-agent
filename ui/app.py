@@ -2,6 +2,7 @@ import streamlit as st
 import sys
 import os
 import shutil
+import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents.bug_analyzer import analyze_bug
@@ -60,6 +61,7 @@ if st.button("🔧 Fix My Bug!", type="primary"):
 
                         st.write("🚀 Creating PR...")
                         pr_url = None
+                        branch_name = f"bug-fix-{int(time.time())}"
                         try:
                             if os.path.exists("temp_repo"):
                                 shutil.rmtree("temp_repo")
@@ -71,12 +73,12 @@ if st.button("🔧 Fix My Bug!", type="primary"):
 
                             repo = init_repo("temp_repo")
                             setup_remote_with_token(repo, repo_name="nandanirunwal/bug-to-pr-agent")
-                            create_branch(repo, "bug-fix-branch")
+                            create_branch(repo, branch_name)
                             commit_changes(repo, ["fixed_code.py"], "fix: automated bug fix by Bug-to-PR Agent")
-                            push_branch(repo, "bug-fix-branch")
+                            push_branch(repo, branch_name)
 
                             pr_url = create_pr(
-                                branch_name="bug-fix-branch",
+                                branch_name=branch_name,
                                 title="fix: automated bug fix by Bug-to-PR Agent",
                                 body=f"Auto-generated PR\n\nBug: {bug_report.get('bug_description')}\n\nTests: All passed ✅"
                             )
