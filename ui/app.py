@@ -29,6 +29,9 @@ if st.button("🔧 Fix My Bug!", type="primary"):
     if not code.strip():
         st.error("Please paste some code first!")
     else:
+        st.markdown("### 📥 Code You Submitted:")
+        st.code(code, language="python")
+
         with open("temp_input.py", "w") as f:
             f.write(code)
 
@@ -39,9 +42,15 @@ if st.button("🔧 Fix My Bug!", type="primary"):
             if not bug_report or "error" in bug_report:
                 status.update(label="Pipeline failed!", state="error")
                 st.error("❌ Could not analyze bug!")
+                st.write("Raw bug_report:")
+                st.write(bug_report)
             else:
                 st.write("🔧 Fixing code...")
                 fixed_code = fix_code(code, bug_report)
+
+                # Always show what was generated, regardless of what happens next
+                st.markdown("### ✅ Fixed Code (Generated):")
+                st.code(fixed_code if fixed_code else "None returned!", language="python")
 
                 if not fixed_code:
                     status.update(label="Pipeline failed!", state="error")
@@ -49,12 +58,22 @@ if st.button("🔧 Fix My Bug!", type="primary"):
                 else:
                     st.write("📝 Writing tests...")
                     test_code = write_tests(fixed_code)
+
+                    st.markdown("### 🧪 Test Code (Generated):")
+                    st.code(test_code if test_code else "None returned!", language="python")
+
                     os.makedirs("tests", exist_ok=True)
                     with open("tests/test_output.py", "w") as f:
                         f.write(test_code)
 
                     st.write("🧪 Running tests...")
                     result = run_tests()
+
+                    st.markdown("### 📋 Test Output:")
+                    st.text(result.get("output", "No output"))
+                    if result.get("errors"):
+                        st.markdown("### ⚠️ Test Errors:")
+                        st.text(result.get("errors"))
 
                     if result["passed"]:
                         st.write("✅ Tests passed!")
@@ -91,9 +110,6 @@ if st.button("🔧 Fix My Bug!", type="primary"):
 
                         st.markdown("### 🐛 Bug Found:")
                         st.info(bug_report.get('bug_description'))
-
-                        st.markdown("### ✅ Fixed Code:")
-                        st.code(fixed_code, language="python")
 
                         if pr_url:
                             st.success(f"🎉 Pull Request created: {pr_url}")
