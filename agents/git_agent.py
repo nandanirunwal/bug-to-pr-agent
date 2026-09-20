@@ -16,7 +16,7 @@ def setup_remote_with_token(repo: git.Repo, repo_name: str = "nandanirunwal/bug-
         print("ERROR: GITHUB_TOKEN not found in environment!")
         raise ValueError("GITHUB_TOKEN is missing")
 
-    remote_url = f"https://{token}@github.com/{repo_name}.git"
+    remote_url = f"https://{token}:@github.com/{repo_name}.git"
 
     if "origin" in [r.name for r in repo.remotes]:
         repo.delete_remote("origin")
@@ -38,8 +38,9 @@ def commit_changes(repo: git.Repo, files: list, message: str) -> None:
 
 def push_branch(repo: git.Repo, branch_name: str, remote_name: str = "origin") -> None:
     try:
-        origin = repo.remote(name=remote_name)
-        origin.push(refspec=f"{branch_name}:{branch_name}", force=True)
+        with repo.git.custom_environment(GIT_TERMINAL_PROMPT="0"):
+            origin = repo.remote(name=remote_name)
+            origin.push(refspec=f"{branch_name}:{branch_name}", force=True)
         print(f"Pushed branch to GitHub: {branch_name}")
     except Exception as e:
         print(f"PUSH ERROR: {e}")
